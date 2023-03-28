@@ -14,15 +14,15 @@
 &emsp;&emsp;使用transformers下载上述模型
 
 ```python
-# 这里是您的 Python 代码
 tokenizer = BertTokenizer.from_pretrained("MODEL_NAME")
 model = BertModel.from_pretrained("MODEL_NAME")
+```
 
 ## 2、英文模型
+
 &emsp;&emsp;英文模型使用从huggingface下载的预训练模型，你可以通过下面的python代码获取
 
 ```python
-# 这里是您的 Python 代码
 # Import generic wrappers
 from transformers import AutoModel, AutoTokenizer
 # Define the model repo
@@ -34,4 +34,4 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 inputs = tokenizer("Hello world!", return_tensors="pt")
 # Model apply
 outputs = model(**inputs)
-
+```
