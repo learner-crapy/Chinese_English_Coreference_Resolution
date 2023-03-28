@@ -11,7 +11,7 @@
 
 <p align="center">中文选用预训练模型</p>
 
-&emsp;&emsp;使用transformers下载上述模型
+&emsp;&emsp;使用transformers下载上述模型,使用BertTokenizer以及BertModel加载，而不是RobertaTokenizer/RobertaModel，您可以在[这里](https://github.com/ymcui/Chinese-BERT-wwm#%E4%B8%AD%E6%96%87%E6%A8%A1%E5%9E%8B%E4%B8%8B%E8%BD%BD)找到这些信息。
 
 ```python
 tokenizer = BertTokenizer.from_pretrained("MODEL_NAME")
