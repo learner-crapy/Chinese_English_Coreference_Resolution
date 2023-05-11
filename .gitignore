@@ -1,0 +1,11 @@
+/pre_model/chinese/chinese_roberta_wwm_large_ext_pytorch/
+/pre_model/chinese/chinese_roberta_wwm_large_ext_pytorch.zip
+/pre_model/english/spanbert-base-cased/
+/pre_model/english/spanbert-base-cased.zip
+/checkpoints/
+/data/chinese/dev(copy).json
+/data/chinese/test(copy).json
+/data/chinese/train(copy).json
+/data/chinese/bak/
+/data/cluewsc2020_public.zip
+/data/test(copy).json
