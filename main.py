@@ -686,6 +686,9 @@ def train_CRModel(args, train_loader, dev_loader):
 
 
 if __name__ == '__main__':
+    import os
+
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
     from ReadAndWrite import RAW
 
