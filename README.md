@@ -1,5 +1,12 @@
 # 项目介绍
-具体项目代码和项目文件介绍以及部署请查看master分支，注意本项目基于
+具体项目代码和项目文件介绍以及部署请查看master分支，注意本项目基于 https://github.com/taishan1994/pytorch_bert_coreference_resolution 进行部署，做了以下几点工作：
+
+1、更新了数据集，基于OntoNote5.0数据集重构了数据集，训练数据量可以达到1.7GB左右；
+2、加入了机器学习方法SVM、决策树、k-means，深度学习模型VGG16、Inception、LeNet5、LSTM、TextCNN进行分类；
+3、重建了原项目中的数据处理方法，分别从BERT的最后一层和每一层抽取数据合并输入到上述模型中，根据处理方法不同，上述的几个深度学习模型也有有一维卷积和二维卷积的区别，细节请查看代码和原理图；
+4、加入了BERT输出向量可视化的代码；
+5、加入了训练过程的日志记录，包括train_acc、train_loss、dev_loss、dev_acc、recall、precision、recall等
+
 
 # 预训练模型
 ## 1、中文模型
