@@ -22,6 +22,9 @@ rebuild_confusion_matrix.py： 有時圖片參數設置的不太對，導致圖�
 
 textclassfication_bert_textcnn.py： 使用textcnn進行情感分類的例子，僅供在編寫TextCNN時進行參考，非被項目構成部分
 
+graph_detail/* ：我們的訓練日誌是保存在tensorboard中的，然而我們直接從tenorboard中無法直接獲取有效的圖片，所以需要下載csv文件重新繪製圖形，這個文件夾就只這樣一個功能
+
+
 ## 部署和運行
 1、安裝依賴包
 ```bash
