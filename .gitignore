@@ -9,3 +9,9 @@
 /data/chinese/bak/
 /data/cluewsc2020_public.zip
 /data/test(copy).json
+/data/english/dev/dev.english.128.jsonlines
+/data/english/test/test.english.128.jsonlines
+/data/english/train/train.english.128.jsonlines
+/data/chinese/dev/dev.chinese.128.jsonlines
+/data/chinese/test/test.chinese.128.jsonlines
+/data/chinese/train/train.chinese.128.jsonlines
