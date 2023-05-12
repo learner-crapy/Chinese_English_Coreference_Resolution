@@ -46,3 +46,84 @@ inputs = tokenizer("Hello world!", return_tensors="pt")
 # Model apply
 outputs = model(**inputs)
 ```
+# 对BERT的输出进行处理
+<div align="center">
+  <img src="./img/mention_feature.jpg" />
+</div>
+
+<p align="center">从BERT的最后一层获取向量</p>
+
+
+<div align="center">
+  <img src="./img/mention_feature_2d.jpg" />
+</div>
+
+<p align="center">从BERT的每一层获取向量</p>
+
+# 一维训练日志
+
+<div align="center">
+  <img src="./img/chinese_1d_5_5_indicator_chinese.jpg" />
+</div>
+
+<p align="center">从最后一层获取输入到一维卷积的网络中中文</p>
+
+<div align="center">
+  <img src="./img/chinese_1d_5_5_indicator_english.jpg" />
+</div>
+
+<p align="center">从最后一层获取输入到一维卷积的网络中英文</p>
+
+# 二维训练日志
+
+<div align="center">
+  <img src="./img/chinese_2d_5_5_indicator_chinese.jpg" />
+</div>
+
+<p align="center">从每一层获取输入到一维卷积的网络中中文</p>
+
+<div align="center">
+  <img src="./img/chinese_2d_5_5_indicator_english.jpg" />
+</div>
+
+<p align="center">从每一层获取输入到一维卷积的网络中英文</p>
+
+# 一维混淆矩阵
+
+<div align="center">
+  <img src="./img/contrifusion_matrix_5_5_1d_small.jpg" />
+</div>
+
+<p align="center">从每一层获取输入到一维卷积的网络中混淆矩阵中文</p>
+
+
+# 二维混淆矩阵
+
+
+<div align="center">
+  <img src="./img/contrifusion_matrix_5_5_2d_small.jpg" />
+</div>
+
+<p align="center">从每一层获取输入到一维卷积的网络中混淆矩阵英文</p>
+
+# 一层和两层全连接网络日志
+
+<div align="center">
+  <img src="./img/CRModel_CRModel_2dense_chinese_5_5.jpg" />
+</div>
+
+<p align="center">从最后一层获取输入到全连接网络中文</p>
+
+<div align="center">
+  <img src="./img/CRModel_CRModel_2dense_english_5_5.jpg" />
+</div>
+
+<p align="center">从最后一层获取输入到全连接网络英文</p>
+
+# 一层和两层全连接网络混淆矩阵
+
+<div align="center">
+  <img src="./img/CRModel_CRModel_2dense_small.jpg" />
+</div>
+
+<p align="center">从最后一层获取输入到全连接网络混淆矩阵</p>
