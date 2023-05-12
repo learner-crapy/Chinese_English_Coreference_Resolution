@@ -37,20 +37,19 @@ import sklearn
 python main --ensemble_model_list ['vgg16'] --en_cn cn --exp_name 8-8-chinese-300-deep-200-epoch --model_type 2d --lr 2e-8 --other_lr 2e-8 --bert_dir ./pre_model/chinese/chinese_roberta_wwm_large_ext_pytorch/ --data_dir ./data/chinese/ --train_batch_size 32 --eval_batch_size 32 --train_epochs 200 --max_seq_len 300 --dropout_prob 0.1
 python main --ensemble_model_list ['vgg16'] --en_cn en --exp_name 8-8-english-300-deep-200-epoch --model_type 2d --lr 2e-8 --other_lr 2e-8 --bert_dir ./pre_model/english/bert-base-uncased/ --data_dir ./data/english/ --train_batch_size 32 --eval_batch_size 32 --train_epochs 200 --max_seq_len 300 --dropout_prob 0.1
 '''
-
 '''
 --ensemble_model_list
-LSTM
+LSTM TextCNN vgg16 Inception LeNet5 CRModel CRModel_2dense
 --en_cn
 cn
 --exp_name
-8-8-chinese-300-deep-200-epoch
+confusion_matrix_rebuild-2d
 --model_type
 2d
 --lr
-2e-8
+2e-5
 --other_lr
-2e-8
+2e-5
 --bert_dir
 ./pre_model/chinese/chinese_roberta_wwm_large_ext_pytorch/
 --data_dir
@@ -66,8 +65,6 @@ cn
 --dropout_prob
 0.1
 '''
-
-
 class Metrics:
     def __init__(self, trues, preds):
         self.trues = trues
@@ -112,15 +109,15 @@ class BertForCR:
         self.device = torch.device("cpu" if gpu_ids[0] == '-1' else "cuda:" + gpu_ids[0])
         self.criterion = nn.CrossEntropyLoss()
         self.earlyStopping = early_stop.EarlyStopping(
-            monitor='acc',
-            patience=100,
+            monitor='f1',
+            patience=2000,
             verbose=True,
             mode='max',
         )
 
     def build_optimizer_and_scheduler(self, t_total):
         module = (
-            self.model.module if hasattr(self.model, "module") else self.model
+            self.model.module if hasattr(model, "module") else self.model
         )
 
         # 差分学习率
@@ -158,7 +155,7 @@ class BertForCR:
         )
         return optimizer, scheduler
 
-    def train(self, train_loader, SumWriter, experiment, dev_loader=None):
+    def train(self, train_loader, dev_loader=None):
         self.model.to(self.device)
         global_step = 0
         flag = False
@@ -222,7 +219,7 @@ class BertForCR:
                 #     num_confusion_matrix += 1
             try:
                 num_confusion_matrix += 1
-                dev_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = self.dev(dev_loader, experiment,
+                dev_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = self.dev(dev_loader,
                                                                                                    num_confusion_matrix)
             except:
                 print(
@@ -238,7 +235,7 @@ class BertForCR:
                     experiment, dev_loss, accuracy, precision, recall, f1, tp, trues.count(1), fp, fn, tn,
                     trues.count(0)))
             # set the early stop mode to f1 max
-            self.earlyStopping(accuracy, self.model)
+            self.earlyStopping(f1, self.model)
             if self.earlyStopping.early_stop and epoch > 1:
                 flag = True
                 break
@@ -347,7 +344,7 @@ class BertForCR:
         # show confusion matrix
         plt.savefig(savename, format='png')
 
-    def dev(self, dev_loader, experiment, num_confusion_matrix=0):
+    def dev(self, dev_loader, num_confusion_matrix=0):
         self.model.eval()
         self.model.to(self.device)
         total_loss = 0.0
@@ -475,90 +472,45 @@ class BertForCR:
                                 span2_ids)
             logits = np.argmax(output.cpu().detach().numpy().tolist(), -1)
             logger.info('result:' + str(logits[0]))
-def train_vg16(args, train_loader, dev_loader):
-    if 'vgg16' in args.ensemble_model_list:
-        from vgg16 import VGG16
-        if args.model_type == '1d':
-            from vgg16_1d import VGG16
 
-            model = VGG16(Shape=(32, 1, 1024), args=args)
-        else:
-            # english
-            # 24572
-            # chinese
-            # 98304
-            if args.en_cn == 'en':
-                fx_in = 24572
-            else:
-                fx_in = 98304
 
-            model = VGG16(num_classes=2, fx_in=fx_in, args=args)
+if __name__ == '__main__':
 
-        experiment = '-vgg16-'+args.exp_name
-        # if 'vgg16' in experiment:
-        #     print('--------------------------------------------------------------------------------------------------')
-        #     args.train_batch_size = 16
-        #     args.eval_batch_size = 16
-        # args.other_lr = 2e-5
-        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
-        log_dir_path = os.path.join('./log_dir/',  experiment)
+    from ReadAndWrite import RAW
 
-        if raw.IfFolderExists(log_dir_path):
-            pass
-        else:
-            raw.CreateFolder(log_dir_path)
+    raw = RAW()
+    # path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
+    # log_dir_path = os.path.join('./log_dir/', path_time+'-lstm_cn-test')
+    #
+    # if raw.IfFolderExists(log_dir_path):
+    #     pass
+    # else:
+    #     raw.CreateFolder(log_dir_path)
+    #
+    # SumWriter = SummaryWriter(logdir=log_dir_path)
+    processor = CRProcessor()
+    dev_features = get_data(processor, 'dev.json', 'dev', args)
+    dev_dataset = dataset.CRDataset(dev_features)
+    dev_loader = DataLoader(dataset=dev_dataset,
+                            batch_size=args.eval_batch_size,
+                            num_workers=2)
 
-        SumWriter = SummaryWriter(logdir=log_dir_path)
-
-        bertForCR = BertForCR(model, args)
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
-
-def train_CRModel_2dense(args, train_loader, dev_loader):
-    if 'CRModel_2dense' in args.ensemble_model_list:
-        import CRModel_2dense
-        model = CRModel_2dense.CorefernceResolutionModel(args)
-        experiment = '-CRModel_2dense-'+args.exp_name
-        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
-        log_dir_path = os.path.join('./log_dir/',  experiment)
-
-        if raw.IfFolderExists(log_dir_path):
-            pass
-        else:
-            raw.CreateFolder(log_dir_path)
-
-        SumWriter = SummaryWriter(logdir=log_dir_path)
-
-        bertForCR = BertForCR(model, args)
-
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
-
-def train_TextCNN(args, train_loader, dev_loader):
-    if 'TextCNN' in args.ensemble_model_list:
-        in_channels, output_size, kernel_sizes, num_filters = 1, 2, [3, 4, 5], 100
-        model = TextCNN(in_channels, output_size, kernel_sizes, num_filters, args)
-        experiment = 'TextCNN-'+args.exp_name
-        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
-        log_dir_path = os.path.join('./log_dir/',  experiment)
-
-        if raw.IfFolderExists(log_dir_path):
-            pass
-        else:
-            raw.CreateFolder(log_dir_path)
-
-        SumWriter = SummaryWriter(logdir=log_dir_path)
-
-        bertForCR = BertForCR(model, args)
-
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
-
-def train_Inception(args, train_loader, dev_loader):
+    # test_features = dev_features
+    # test_dataset = dataset.CRDataset(test_features)
+    # test_loader = DataLoader(dataset=test_dataset,
+    #                          batch_size=args.eval_batch_size,
+    #                          num_workers=2)
+    # ============================================================================================================================================================
     if 'Inception' in args.ensemble_model_list:
         from inception import Net
+
+        ###269632 chinese  50512 english
+        ###
         if args.en_cn == 'en':
             fx_in = 24572
             model = Net(args=args, fx_in=fx_in)
         else:
-            fx_in = 98304
+            fx_in = 201960 #98304
             model = Net(args=args, fx_in=fx_in)
 
         if args.model_type == '1d':
@@ -583,13 +535,91 @@ def train_Inception(args, train_loader, dev_loader):
             raw.CreateFolder(log_dir_path)
 
         SumWriter = SummaryWriter(logdir=log_dir_path)
+        ckpt_path = './checkpoints/2023-05-05 03-11-41-inception-5-5-new-note-300/best.pt'
+        model.load_state_dict(torch.load(ckpt_path))
+        bertForCR = BertForCR(model, args)
+
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
+
+
+    # ============================================================================================================================================================
+    if 'vgg16' in args.ensemble_model_list:
+        from vgg16 import VGG16
+        if args.model_type == '1d':
+            from vgg16_1d import VGG16
+
+            model = VGG16(Shape=(32, 1, 1024), args=args)
+        else:
+            # english
+            # 24572
+            # chinese
+            # 98304
+            if args.en_cn == 'en':
+                fx_in = 24572
+            else:
+                fx_in = 98304
+
+            model = VGG16(num_classes=2, fx_in=fx_in, args=args)
+
+        experiment = '-vgg16-'+args.exp_name
+        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
+        log_dir_path = os.path.join('./log_dir/',  experiment)
+
+        if raw.IfFolderExists(log_dir_path):
+            pass
+        else:
+            raw.CreateFolder(log_dir_path)
+
+        SumWriter = SummaryWriter(logdir=log_dir_path)
+
+        ckpt_path = './checkpoints/2023-05-05 18-58-33-vgg16-5-5-new-note-300/best.pt'
+        model.load_state_dict(torch.load(ckpt_path))
+
+        bertForCR = BertForCR(model, args)
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
+
+    # # ============================================================================================================================================================
+    if 'CRModel_2dense' in args.ensemble_model_list:
+        import CRModel_2dense
+        model = CRModel_2dense.CorefernceResolutionModel(args)
+        experiment = '-CRModel_2dense-'+args.exp_name
+        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
+        log_dir_path = os.path.join('./log_dir/',  experiment)
+
+        if raw.IfFolderExists(log_dir_path):
+            pass
+        else:
+            raw.CreateFolder(log_dir_path)
+
+        SumWriter = SummaryWriter(logdir=log_dir_path)
 
         bertForCR = BertForCR(model, args)
 
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
+
+    # ============================================================================================================================================================
+    if 'TextCNN' in args.ensemble_model_list:
+        in_channels, output_size, kernel_sizes, num_filters = 1, 2, [3, 4, 5], 100
+        model = TextCNN(in_channels, output_size, kernel_sizes, num_filters, args)
+        experiment = 'TextCNN-'+args.exp_name
+        path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
+        log_dir_path = os.path.join('./log_dir/',  experiment)
+
+        if raw.IfFolderExists(log_dir_path):
+            pass
+        else:
+            raw.CreateFolder(log_dir_path)
+
+        SumWriter = SummaryWriter(logdir=log_dir_path)
+
+        ckpt_path = './checkpoints/2023-04-17 21-39-34-inception/best.pt'
+        model.load_state_dict(torch.load(ckpt_path))
+        bertForCR = BertForCR(model, args)
+
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
 
 
-def train_LeNet5(args, train_loader, dev_loader):
+    # ============================================================================================================================================================
     if 'LeNet5' in args.ensemble_model_list:
         from lenet5 import LeNet5
 
@@ -624,10 +654,11 @@ def train_LeNet5(args, train_loader, dev_loader):
         SumWriter = SummaryWriter(logdir=log_dir_path)
 
         bertForCR = BertForCR(model, args)
+        ckpt_path = './checkpoints/2023-05-05 04-20-07-Lenet5-5-5-new-note-300/best.pt'
+        model.load_state_dict(torch.load(ckpt_path))
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
 
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
-
-def train_Lstm(args, train_loader, dev_loader):
+    # ============================================================================================================================================================
     if 'LSTM' in args.ensemble_model_list:
         # from lstm import LstmModel
 
@@ -661,12 +692,13 @@ def train_Lstm(args, train_loader, dev_loader):
             raw.CreateFolder(log_dir_path)
 
         SumWriter = SummaryWriter(logdir=log_dir_path)
-
+        ckpt_path = './checkpoints/2023-05-05 06-19-02-LstmModel-5-5-new-note-300/best.pt'
+        model.load_state_dict(torch.load(ckpt_path))
         bertForCR = BertForCR(model, args)
 
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
 
-def train_CRModel(args, train_loader, dev_loader):
+    # ============================================================================================================================================================
     if 'CRModel' in args.ensemble_model_list:
         model = CRModel.CorefernceResolutionModel(args)
         experiment = '-CRModel-'+args.exp_name
@@ -682,78 +714,5 @@ def train_CRModel(args, train_loader, dev_loader):
         SumWriter = SummaryWriter(logdir=log_dir_path)
 
         bertForCR = BertForCR(model, args)
-        bertForCR.train(train_loader, SumWriter, experiment, dev_loader)
+        total_loss, accuracy, precision, recall, f1, tp, fp, fn, tn, trues, preds = bertForCR.dev(dev_loader)
 
-
-if __name__ == '__main__':
-
-    from ReadAndWrite import RAW
-
-    raw = RAW()
-    # path_time = time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())
-    # log_dir_path = os.path.join('./log_dir/', path_time+'-lstm_cn-test')
-    #
-    # if raw.IfFolderExists(log_dir_path):
-    #     pass
-    # else:
-    #     raw.CreateFolder(log_dir_path)
-    #
-    # SumWriter = SummaryWriter(logdir=log_dir_path)
-    processor = CRProcessor()
-    train_features = get_data(processor, 'train.json', 'train', args)
-    train_dataset = dataset.CRDataset(train_features)
-    train_sampler = RandomSampler(train_dataset)
-    train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=args.train_batch_size,
-                              sampler=train_sampler,
-                              num_workers=2)
-    dev_features = get_data(processor, 'dev.json', 'dev', args)
-    dev_dataset = dataset.CRDataset(dev_features)
-    dev_loader = DataLoader(dataset=dev_dataset,
-                            batch_size=args.eval_batch_size,
-                            num_workers=2)
-
-    # test_features = dev_features
-    # test_dataset = dataset.CRDataset(test_features)
-    # test_loader = DataLoader(dataset=test_dataset,
-    #                          batch_size=args.eval_batch_size,
-    #                          num_workers=2)
-    # ============================================================================================================================================================
-
-    train_Lstm(args, train_loader, dev_loader)
-    train_CRModel(args, train_loader, dev_loader)
-    train_Inception(args, train_loader, dev_loader)
-    train_LeNet5(args, train_loader, dev_loader)
-    train_TextCNN(args, train_loader, dev_loader)
-    train_Lstm(args, train_loader, dev_loader)
-    train_CRModel_2dense(args, train_loader, dev_loader)
-
-        # bertForCR = BertForCR(model, args)
-    # # ===================================
-    # # bertForCR.train(train_loader, dev_loader)
-    # # ===================================
-    # # ===================================
-    # model = InceptionModel(input_shape=(args.train_batch_size, 25, 1024), args=args)
-    # ckpt_path = './checkpoints/2023-04-17 21-39-34-inception/best.pt'
-    # model.load_state_dict(torch.load(ckpt_path))
-    # bertForCR = BertForCR(model, args)
-    # bertForCR.test(model, test_loader)
-    # # ===================================
-    # # ===================================
-    # with open(args.data_dir + 'test.json', 'r', encoding='utf-8') as fp:
-    #     lines = fp.readlines()
-    #     for i, line in enumerate(lines):
-    #         data = eval(line)
-    #         target = data['target']
-    #         text = data['text']
-    #         span1 = [target['span1_text'], target['span1_index']]
-    #         span2 = [target['span2_text'], target['span2_index']]
-    #         logger.info('===============================')
-    #         logger.info('text=' + text)
-    #         logger.info('span1=' + str(span1))
-    #         logger.info('span2=' + str(span2))
-    #         bertForCR.predict(model, text, span1, span2, args)
-    #         logger.info('===============================')
-    #         if i == 10:
-    #             break
-    # # # ===================================
