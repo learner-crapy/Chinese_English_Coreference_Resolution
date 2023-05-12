@@ -558,7 +558,7 @@ def train_Inception(args, train_loader, dev_loader):
             fx_in = 24572
             model = Net(args=args, fx_in=fx_in)
         else:
-            fx_in = 98304
+            fx_in = 269632 #98304
             model = Net(args=args, fx_in=fx_in)
 
         if args.model_type == '1d':
