@@ -1,7 +1,7 @@
 # 项目介绍
 具体项目代码和项目文件介绍以及部署请查看master分支，注意本项目基于 https://github.com/taishan1994/pytorch_bert_coreference_resolution 进行部署，做了以下几点工作：
 
-1、更新了数据集，基于OntoNote5.0数据集重构了数据集，训练数据量可以达到1.7GB左右；
+1、更新了数据集，基于OntoNote5.0数据集重构了数据集，训练数据量可以达到1.7GB左右，实际训练中为了减少时间成本，只选择了文本长度小于300的样本进行重构，所以数据量减了很多；
 
 2、加入了机器学习方法SVM、决策树、k-means，深度学习模型VGG16、Inception、LeNet5、LSTM、TextCNN进行分类；
 
