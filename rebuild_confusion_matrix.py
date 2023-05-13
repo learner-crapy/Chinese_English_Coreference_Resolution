@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from sklearn.metrics import confusion_matrix
+from ReadAndWrite import RAW
+raw = RAW()
 
 
 def DrawFusionMatrix(classes, confusion_matrix, Title, savepath, fig_size=(3, 3), fraction=0.0453):
@@ -55,9 +57,25 @@ def DrawFusionMatrix(classes, confusion_matrix, Title, savepath, fig_size=(3, 3)
     plt.show()
 
 
-# Generate 100 random true labels (0 or 1)
-true_labels = np.array([1, 0, 0, 1, 1, 0, 0])
-predicted_labels = np.array([0, 0, 1, 1, 0, 1, 0])
+def confusion_matrix_indicator(matrix):
+    '''
+    tn|fp
+    fn|tp
+    '''
+    tn = matrix[0][0]
+    fp = matrix[0][1]
+    fn = matrix[1][0]
+    tp = matrix[1][1]
+    acc = (tp + tn) / (tp + fp + fn + tn)
+    recall = tp / (tp + fn)
+    precision = tp / (tp + fp)
+    f1 = 2 * precision * recall / (precision + recall)
+    return acc, recall, precision, f1
+
+# confusion_matrix = confusion_matrix(true_labels, predicted_labels)
+# DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title='Title',
+#                      savepath='./2d.jpg')
+
 
 data_list_2d = [[[376, 265], [273, 472]],
                 [[40, 601], [23, 722]],
@@ -91,11 +109,48 @@ data_list_CRModel = [[[396, 245], [230, 515]],
                      ]
 
 data_list_CRModel_titles = ['CRModel_chinese', 'CRModel_2dense_chinese', 'CRModel_english', 'CRModel_2dense_english']
-# # confusion_matrix = confusion_matrix(true_labels, predicted_labels)
+
+data_list_LSTM_CRModel = [[[603, 195], [141, 707]],
+                          [[664, 184], [101, 747]],
+                          [[686, 312], [207, 788]],
+                          [[631, 367], [153, 842]],
+                          [[690, 158], [106, 742]],
+                          [[599, 399], [273, 722]]
+                          ]
+data_list_LSTM_CRModel_titles = ['CRModel_chinese', 'CRModel_2dense_chinese', 'CRModel_english', 'CRModel_2dense_english', 'LSTM_chinese', 'LSTM_english']
+
+def write_indicator(data_2d, title_list, save_path):
+    Indicator = []
+    for i in range(0, len(data_2d)):
+        OneLine = []
+        confusion_matrix = np.array(data_2d[i])
+        acc, recall, precision, f1 = confusion_matrix_indicator(confusion_matrix)
+        acc = round(acc, 2)
+        recall = round(recall, 2)
+        precision = round(precision, 2)
+        f1 = round(f1, 2)
+        OneLine.append(acc)
+        OneLine.append(recall)
+        OneLine.append(precision)
+        OneLine.append(f1)
+        Indicator.append(OneLine)
+        print(title_list[i] + ' acc: ' + str(acc) + ' recall: ' + str(recall) + ' precision: ' + str(
+            precision) + ' f1: ' + str(f1))
+
+    np.savetxt(save_path, np.array(Indicator), delimiter=',')
+
+
+data = [data_list_2d, data_list_1d, data_list_CRModel, data_list_LSTM_CRModel]
+titles = [titles_2d, titles_1d, data_list_CRModel_titles, data_list_LSTM_CRModel_titles]
+save_paths = ['2d.csv', '1d.csv', 'CRModel.csv', 'LSTM_CRModel.csv']
+for i in range(0, len(data)):
+    write_indicator(data[i], titles[i], save_paths[i])
+
+
 # for i in range(0, len(data_list_2d)):
+#     OneLine = []
 #     confusion_matrix = np.array(data_list_2d[i])
-#
-#     Title = titles_2d[i] + '_confusion_matrix'
+    # Title = titles_2d[i] + '_confusion_matrix'
 #
 #     DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title=Title,
 #                      savepath='./new_confutin_matrix/' + Title + '_2d.jpg')
@@ -105,17 +160,31 @@ data_list_CRModel_titles = ['CRModel_chinese', 'CRModel_2dense_chinese', 'CRMode
 # # 写一个函数，输入真是标签列表和预测标签列表，返回混淆矩阵
 # for i in range(0, len(data_list_1d)):
 #     confusion_matrix = np.array(data_list_1d[i])
-#
+#     acc, recall, precision, f1 = confusion_matrix_indicator(confusion_matrix)
+#     print(titles_1d[i] + ' acc: ' + str(acc) + ' recall: ' + str(recall) + ' precision: ' + str(precision) + ' f1: ' + str(f1))
+
 #     Title = titles_1d[i] + '_confusion_matrix'
 #
 #     DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title=Title,
 #                      savepath='./new_confutin_matrix/' + Title + '_1d.jpg')
 
-# 写一个函数，输入真是标签列表和预测标签列表，返回混淆矩阵
-for i in range(0, len(data_list_CRModel)):
-    confusion_matrix = np.array(data_list_CRModel[i])
+# # 写一个函数，输入真是标签列表和预测标签列表，返回混淆矩阵
+# for i in range(0, len(data_list_CRModel)):
+#     confusion_matrix = np.array(data_list_CRModel[i])
+#     acc, recall, precision, f1 = confusion_matrix_indicator(confusion_matrix)
+#     print(titles_2d[i] + ' acc: ' + str(acc) + ' recall: ' + str(recall) + ' precision: ' + str(precision) + ' f1: ' + str(f1))
 
-    Title = data_list_CRModel_titles[i] + '_confusion_matrix'
+#     Title = data_list_CRModel_titles[i] + '_confusion_matrix'
+#
+#     DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title=Title,
+#                      savepath='./new_confutin_matrix/' + Title + '_1d.jpg')
 
-    DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title=Title,
-                     savepath='./new_confutin_matrix/' + Title + '_1d.jpg')
+# for i in range(0, len(data_list_LSTM_CRModel)):
+#     confusion_matrix = np.array(data_list_LSTM_CRModel[i])
+#     acc, recall, precision, f1 = confusion_matrix_indicator(confusion_matrix)
+#     print(titles_2d[i] + ' acc: ' + str(acc) + ' recall: ' + str(recall) + ' precision: ' + str(precision) + ' f1: ' + str(f1))
+#
+#     Title = data_list_LSTM_CRModel_titles[i] + '_confusion_matrix'
+#
+#     DrawFusionMatrix(classes=['0', '1'], confusion_matrix=confusion_matrix, Title=Title,
+#                      savepath='./LSTM_CRModel/' + Title + '_1d.jpg')
