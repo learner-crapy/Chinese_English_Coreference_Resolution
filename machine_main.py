@@ -25,9 +25,9 @@ args = config.Args().get_parser()
 utils.set_seed(args.seed)
 logger = logging.getLogger(__name__)
 utils.set_logger(os.path.join(args.log_dir, 'main.log'))
-from inception import InceptionModel
 
-
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 class Metrics:
     def __init__(self, trues, preds):
         self.trues = trues
@@ -118,9 +118,6 @@ class BertForCR:
         stop_count = 0
         stop_dev_loss = float('-inf')
         # 每次读取的数据量
-        each_time_lines = self.args.each_time_lines
-        # 为了节约内存，这个数据需要手动统计
-        lines = self.args.sum_lines
         ################################
         train_data = []
         train_label = []
@@ -141,7 +138,7 @@ class BertForCR:
                 train_data.append(train_output)
                 train_label.append(batch_data['label'].cpu().detach().numpy())
                 # train_label.append(batch_data['label'])
-                print("epoch:{}, step:{}/{}]".format(epoch,step, t_total))
+                print("epoch:{}, step:{}/{}".format(epoch,step, t_total))
 
         # for i in range(len(train_data)):
         #     train_data[i] = torch.stack([torch.tensor(x).clone() for x in train_data[i]], dim=0)
@@ -157,22 +154,28 @@ class BertForCR:
                                     dev_batch_data['token_type_ids'],
                                     dev_batch_data['span1_ids'],
                                     dev_batch_data['span2_ids']).cpu().detach().numpy()
-                print("eval_step:{}/{}]".format(eval_step, len(dev_loader)))
+                print("eval_step:{}/{}".format(eval_step, len(dev_loader)))
                 dev_label.append(dev_batch_data['label'].cpu().detach().numpy())
                 dev_data.append(dev_output)
-
-        train_data = np.concatenate(train_data, axis=0).reshape(-1, 2048) # 1536
         train_label = np.concatenate(train_label, axis=0).reshape(-1, )
-        dev_data = np.concatenate(dev_data, axis=0).reshape(-1, 2048) # 1536
+        train_data = np.concatenate(train_data, axis=0).reshape(train_label.shape[0], -1) # 2048 # 1536
         dev_label = np.concatenate(dev_label, axis=0).reshape(-1, )
+        dev_data = np.concatenate(dev_data, axis=0).reshape(dev_label.shape[0], -1) # 2048 # 1536
+
+
+
         from machine import supervised_kmeans_clustering, svm_classification, decision_tree_classification, linear_regression_prediction
+
+        print(self.args.en_cn, self.args.model_type, '----------------------------------------------------Kmeans clustering----------------------------------------------------')
         supervised_kmeans_clustering(vectors=train_data, labels=train_label,
                                      dev_vectors=dev_data, dev_labels=dev_label, num_clusters=2,
                                      batch_size=train_data.shape[0], epochs=1)
+        print(self.args.en_cn, self.args.model_type, '----------------------------------------------------SVM classification----------------------------------------------------')
         svm_classification(train_data, train_label, dev_data, dev_label,
                            num_classes=2, batch_size=train_data.shape[0], epochs=1)
 
         # In[52]:
+        print(self.args.en_cn, self.args.model_type, '----------------------------------------------------Decision Tree classification----------------------------------------------------')
 
         decision_tree_classification(train_data, train_label, dev_data, dev_label, num_classes=2, batch_size=train_data.shape[0], epochs=1)
 

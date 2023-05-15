@@ -29,7 +29,7 @@ class Args:
 
     parser.add_argument('--max_seq_len', default=200, type=int)
 
-    parser.add_argument('--eval_batch_size', default=40, type=int)
+    parser.add_argument('--eval_batch_size', default=16, type=int)
 
     parser.add_argument('--swa_start', default=3, type=int,
                         help='the epoch when swa start')
@@ -56,7 +56,7 @@ class Args:
 
     parser.add_argument('--adam_epsilon', default=1e-5, type=float)
 
-    parser.add_argument('--train_batch_size', default=40, type=int)
+    parser.add_argument('--train_batch_size', default=16, type=int)
 
     parser.add_argument('--eval_model', default=True, action='store_true',
                         help='whether to eval model after training')

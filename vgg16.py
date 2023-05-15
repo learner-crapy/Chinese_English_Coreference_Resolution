@@ -163,7 +163,7 @@ class VGG16(BaseModel):
         logits = []
         for bert_outputs_i in list(bert_outputs.hidden_states):
             token_out = bert_outputs_i # [batch, max_seq_len, dim]
-            token_out = bert_outputs[0]  # [batch, max_seq_len, dim]
+            # token_out = bert_outputs[0]  # [batch, max_seq_len, dim]
             seq_out = bert_outputs[1]  # [batch, dim]
             logit = []
 

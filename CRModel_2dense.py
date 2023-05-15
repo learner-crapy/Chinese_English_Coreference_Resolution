@@ -13,8 +13,16 @@ class CorefernceResolutionModel(BaseModel):
         :param loss_type: train loss type in ['ce', 'ls_ce', 'focal']
         """
         super(CorefernceResolutionModel, self).__init__(args.bert_dir, dropout_prob=args.dropout_prob)
+        self.args = args
 
-        out_dims = self.bert_config.hidden_size
+        if args.model_type == '2d':
+
+            out_dims = 19968
+            if args.en_cn == 'cn':
+                out_dims = 51200
+
+        else:
+            out_dims = self.bert_config.hidden_size
         mid_linear_dims = kwargs.pop('mid_linear_dims', 128)
 
         self.mid_linear = nn.Sequential(
@@ -47,24 +55,53 @@ class CorefernceResolutionModel(BaseModel):
             attention_mask=attention_mask,
             token_type_ids=token_type_ids
         )
+        if self.args.model_type == '2d':
+            logits = []
+            for bert_outputs_i in list(bert_outputs.hidden_states):
+                token_out = bert_outputs_i  # [batch, max_seq_len, dim]
+                # token_out = bert_outputs[0]  # [batch, max_seq_len, dim]
+                seq_out = bert_outputs[1]  # [batch, dim]
+                logit = []
 
-        token_out = bert_outputs[0] # [batch, max_seq_len, dim]
-        seq_out = bert_outputs[1]  # [batch, dim]
-        logits = []
-        for t_out, s_out, s1_mask, s2_mask in zip(token_out, seq_out, span1_mask, span2_mask):
-            s1_mask = s1_mask == 1
-            s2_mask = s2_mask == 1
-            span1_out = t_out[s1_mask]
-            span2_out = t_out[s2_mask]
-            out = torch.cat([s_out.unsqueeze(0), span1_out, span2_out], dim=0).unsqueeze(0)
-            # 这里可以使用最大池化或者平均池化，使用平均池化的时候要注意，
-            # 要除以每一个句子本身的长度
-            out = torch.sum(out, 1)
-            logits.append(out)
-            # logits.append(torch.nn.functional.normalize(out, p=2, dim=1))
-        # add torch normalization
-        # logits = torch.nn.functional.normalize(logits, p=2, dim=1)
-        logits = torch.cat(logits, dim=0)
+                for t_out, s_out, s1_mask, s2_mask in zip(token_out, seq_out, span1_mask, span2_mask):
+                    s1_mask = s1_mask == 1
+                    s2_mask = s2_mask == 1
+                    span1_out = t_out[s1_mask]
+                    span2_out = t_out[s2_mask]
+                    # out = torch.cat([s_out.unsqueeze(0), span1_out, span2_out], dim=0).unsqueeze(0)
+                    # 这里可以使用最大池化或者平均池化，使用平均池化的时候要注意，
+                    # 要除以每一个句子本身的长度
+                    # out = torch.sum(out, 1)
+                    #
+                    out = torch.cat(
+                        [torch.mean(span1_out, 0).unsqueeze(0), torch.mean(span2_out, 0).unsqueeze(0)],
+                        dim=1)
+                    out = torch.where(torch.isnan(out), torch.full_like(out, 0), out)
+                    logit.append(out)
+                logits.append(logit)
+            for i in range(len(logits)):
+                logits[i] = torch.stack([torch.tensor(x).clone() for x in logits[i]], dim=0)
+            logits = torch.nn.functional.normalize(
+                torch.stack([torch.tensor(x).clone() for x in logits], dim=0).squeeze().transpose(0, 1), p=2, dim=1)
+            logits = logits.reshape(logits.shape[0], -1)
+        elif self.args.model_type == '1d':
+            token_out = bert_outputs[0] # [batch, max_seq_len, dim]
+            seq_out = bert_outputs[1]  # [batch, dim]
+            logits = []
+            for t_out, s_out, s1_mask, s2_mask in zip(token_out, seq_out, span1_mask, span2_mask):
+                s1_mask = s1_mask == 1
+                s2_mask = s2_mask == 1
+                span1_out = t_out[s1_mask]
+                span2_out = t_out[s2_mask]
+                out = torch.cat([s_out.unsqueeze(0), span1_out, span2_out], dim=0).unsqueeze(0)
+                # 这里可以使用最大池化或者平均池化，使用平均池化的时候要注意，
+                # 要除以每一个句子本身的长度
+                out = torch.sum(out, 1)
+                logits.append(out)
+                # logits.append(torch.nn.functional.normalize(out, p=2, dim=1))
+            # add torch normalization
+            # logits = torch.nn.functional.normalize(logits, p=2, dim=1)
+            logits = torch.cat(logits, dim=0)
         logits = self.mid_linear(logits)
         logits = self.mid_linear_1(logits)
         logits = self.dropout(logits)
