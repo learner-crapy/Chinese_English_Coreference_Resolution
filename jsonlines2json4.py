@@ -97,7 +97,7 @@ def get_values_by_key_name(lst, key_name1, key_name2):
     return list(zip(values_with_key_span1, values_with_key_span2))
 
 # jsonlines2json4添加max_seq_len，控制数据，防止自动解析时出现样本不平衡
-def main(language, jsonlines_path, example_dict, json_path, seq_max_len=300):
+def main(language, jsonlines_path, example_dict, json_path, seq_max_len=600):
     # print('processing file: ----------------', jsonlines_path, '------------------')
     # jsonlines文本的行数
     file_index = 0

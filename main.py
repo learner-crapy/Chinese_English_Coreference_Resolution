@@ -488,7 +488,7 @@ def train_vg16(args, train_loader, dev_loader):
             # chinese
             # 98304
             if args.en_cn == 'en':
-                fx_in = 24572
+                fx_in = 24576# 24572
             else:
                 fx_in = 98304
 
@@ -555,7 +555,7 @@ def train_Inception(args, train_loader, dev_loader):
     if 'Inception' in args.ensemble_model_list:
         from inception import Net
         if args.en_cn == 'en':
-            fx_in = 24572
+            fx_in = 50512 #24572
             model = Net(args=args, fx_in=fx_in)
         else:
             fx_in = 269632 #98304
@@ -728,7 +728,7 @@ if __name__ == '__main__':
     train_Inception(args, train_loader, dev_loader)
     train_LeNet5(args, train_loader, dev_loader)
     train_TextCNN(args, train_loader, dev_loader)
-    train_Lstm(args, train_loader, dev_loader)
+    train_vg16(args, train_loader, dev_loader)
     train_CRModel_2dense(args, train_loader, dev_loader)
 
         # bertForCR = BertForCR(model, args)
