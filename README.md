@@ -33,6 +33,8 @@ model = BertModel.from_pretrained("MODEL_NAME")
 
 &emsp;&emsp;英文模型使用从huggingface下载的预训练模型，你可以通过下面的python代码获取,[huggingface地址
 ](https://huggingface.co/bert-base-uncased)
+please download it in windows to obtain pytorch_model.bin file
+
 ```python
 # Import generic wrappers
 from transformers import AutoModel, AutoTokenizer
