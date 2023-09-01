@@ -31,7 +31,7 @@ model = BertModel.from_pretrained("MODEL_NAME")
 
 ## 2、英文模型
 
-&emsp;&emsp;英文模型使用从huggingface下载的预训练模型，你可以通过下面的python代码获取
+&emsp;&emsp;英文模型使用从huggingface下载的预训练模型，你可以通过下面的python代码获取,[huggingface地址]([url](https://huggingface.co/bert-base-uncased))
 
 ```python
 # Import generic wrappers
